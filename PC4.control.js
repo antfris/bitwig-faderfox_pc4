@@ -1,6 +1,6 @@
 loadAPI(11);
 
-host.defineController("Faderfox", "PC4", "0.1", "fa46371e-5e65-4b54-9ebd-4d1e43cebfc2", "Stefan Windus");
+host.defineController("Faderfox", "PC4", "0.1", "fa46371e-5e65-4b54-9ebd-4d1e43cebfc2", "Stefan Windus & Anthony Frisby");
 host.defineMidiPorts(1, 1);
 
 if (host.platformIsWindows())
