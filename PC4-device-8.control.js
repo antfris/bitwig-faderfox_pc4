@@ -1,6 +1,6 @@
 loadAPI(11);
 
-host.defineController("Faderfox", "PC4", "0.1", "fa46371e-5e65-4b54-9ebd-4d1e43cebfc2", "Stefan Windus & Anthony Frisby");
+host.defineController("Faderfox", "PC4 Device 8 (Selected)", "0.2", "fa46371e-5e65-4b54-9ebd-4d1e43cebfc2", "Stefan Windus & Anthony Frisby");
 host.defineMidiPorts(1, 1);
 
 if (host.platformIsWindows())
@@ -21,10 +21,10 @@ else if (host.platformIsLinux())
 }
 
 // Define the range of CCs
-var CC_USER_RANGE_HI = 16;
-var CC_USER_RANGE_LO = 1;
-var CC_MACRO_RANGE_HI = 24;
-var CC_MACRO_RANGE_LO = 17;
+var CC_MACRO_RANGE_LO = 1;
+var CC_MACRO_RANGE_HI = 8;
+var CC_USER_RANGE_LO = 9;
+var CC_USER_RANGE_HI = 24;
 
 function init() {
    host.getMidiInPort(0).setMidiCallback(onMidi0);
