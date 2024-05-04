@@ -1,6 +1,6 @@
 loadAPI(11);
 
-host.defineController("Faderfox", "PC4 Device 16 Plus (page1, page2)", "0.2", "fa46371e-5e65-4b54-9ebd-4d1e43cebfc6", "Stefan Windus & Anthony Frisby");
+host.defineController("Faderfox", "PC4 Device 16 Track (page1, page2)", "0.2", "fa46371e-5e65-4b54-9ebd-4d1e43cebfc7", "Stefan Windus & Anthony Frisby");
 host.defineMidiPorts(1, 1);
 
 if (host.platformIsWindows())
@@ -28,6 +28,8 @@ var CC_MACRO1_RANGE_HI = 8;
 var CC_MACRO2_RANGE_LO = 9;
 var CC_MACRO2_RANGE_HI = 16;
 
+var tracks;
+
 function init() {
    host.getMidiInPort(0).setMidiCallback(onMidi0);
 
@@ -43,20 +45,19 @@ function init() {
    // Get cursor device and controls
    cursorTrack = host.createCursorTrackSection(0, 8);
    cursorDevice = host.createCursorDevice();
-   //controlPageCursor1 = cursorDevice.createCursorRemoteControlsPage("Page 1", 8, "page1");
-   //controlPageCursor2 = cursorDevice.createCursorRemoteControlsPage("Page 2", 8, "page2");
+   controlPageCursor = cursorDevice.createCursorRemoteControlsPage(8);
+   controlPageCursor1 = cursorDevice.createCursorRemoteControlsPage("Page 1", 8, "page1");
+   controlPageCursor2 = cursorDevice.createCursorRemoteControlsPage("Page 2", 8, "page2");
 
-   // Create an array of remote control pages
-   controlPages = [];
-   for (var i = 1; i <= 10; i++) {
-      controlPages.push(cursorDevice.createCursorRemoteControlsPage("Page " + i, 8, "page" + i));
-   }
-
-   cp1 = controlPages[0];
-   cp2 = controlPages[1];
+   tracks = host.createTrackBank(8, 0, 8, true);
+   tracks.sceneBank().setIndication(true);
 
    println("PC4 initialized!");
 }
+
+let numberOfQuadrants = 8;
+let lastQuadrant = 0;
+let quadrant = 0;
 
 // Called when a short MIDI message is received on MIDI input port 0.
 function onMidi0(status, data1, data2) {
@@ -64,22 +65,43 @@ function onMidi0(status, data1, data2) {
    // Checks if the MIDI data is a CC
    if (isChannelController(status))
    {
+      // Handle track selection with CC 24
+      if (data1 === 24) {
+
+         // Select the track based on the CC value
+         for (let i = 0; i < numberOfQuadrants; i++) {
+            if (data2 < 128/numberOfQuadrants*(i+1)) {
+               quadrant = i;
+               break;
+            }
+         }
+         
+         if (quadrant !== lastQuadrant) {
+            host.showPopupNotification(`Quadrant: ${quadrant}`);
+            //host.showPopupNotification(data2);
+               
+            const trackSelected = quadrant;
+            println(` T-[${trackSelected}]: Select and arm record`);
+            for (let trackNumber = 0; trackNumber < 6; trackNumber++) {
+               const track = tracks.getItemAt(trackNumber);
+               if (trackNumber === trackSelected) {
+                  track.selectInEditor();
+                  track.arm().set(true);
+               } else {
+                  track.arm().set(false);
+               }
+            }
+         }
+         lastQuadrant = quadrant;
+      }
+
       // Check if the CC is within our range
       if (data1 >= CC_USER_RANGE_LO && data1 <= CC_USER_RANGE_HI)
       {
          // Get the index of the CC in our User Controls
          // And set the value of the control to the value of our CC
          var index = data1 - CC_USER_RANGE_LO;
-         // Set the value of the control to data2 with a resolution of 128
          userControls.getControl(index).set(data2, 128);
-      }
-
-      if (data1 === 24) { // Assuming CC 24 is used for page switching
-         var pageIndex = Math.floor(data2 / 12.8); // Maps 0-127 to 0-9
-         if (pageIndex >= 0 && pageIndex < controlPages.length) {
-            cp1 = controlPages[pageIndex];
-            cp2 = controlPages[pageIndex + 1];
-         }
       }
 
       // Check if the CC is within our range
@@ -88,7 +110,7 @@ function onMidi0(status, data1, data2) {
          // Get the index of the CC in our Macro Controls
          // And set the value of the control to the value of our CC
          var index = data1 - CC_MACRO1_RANGE_LO;
-         cp1.getParameter(index).set(data2, 128);
+         controlPageCursor.getParameter(index).set(data2, 128);
       }
 
       // Check if the CC is within our range
@@ -97,7 +119,7 @@ function onMidi0(status, data1, data2) {
          // Get the index of the CC in our Macro Controls
          // And set the value of the control to the value of our CC
          var index = data1 - CC_MACRO2_RANGE_LO;
-         cp2.getParameter(index).set(data2, 128);
+         controlPageCursor2.getParameter(index).set(data2, 128);
       }
    }
 }
